@@ -1,0 +1,260 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.zrj.vuezhizhu.dao.VueDao">
+
+    <select id="getAdministrator" resultType="com.zrj.vuezhizhu.entity.Administrator">
+        SELECT * FROM administrator WHERE username=#{username} and password=#{password}
+    </select>
+
+    <select id="listSchool" resultType="string">
+        SELECT DISTINCT schoolName FROM building_room
+    </select>
+
+    <select id="listBuilding" resultType="string">
+        SELECT DISTINCT building FROM building_room WHERE schoolName=#{schoolName}
+    </select>
+
+    <select id="listRoom" resultType="string">
+        SELECT DISTINCT room FROM building_room WHERE schoolName=#{schoolName} and building=#{building}
+    </select>
+
+    <select id="countStudent" resultType="int">
+        SELECT COUNT(*) FROM student
+            <where>
+                <if test="schoolName!=''">
+                    schoolName=#{schoolName}
+                    <if test="building!=''">
+                        and building=#{building}
+                        <if test="room!=''">
+                            and room=#{room}
+                        </if>
+                    </if>
+                </if>
+            </where>
+    </select>
+
+    <select id="listStudent" resultType="com.zrj.vuezhizhu.entity.Student">
+        SELECT * FROM student
+            <where>
+                <if test="schoolName!=''">
+                    schoolName=#{schoolName}
+                        <if test="building!=''">
+                            and building=#{building}
+                                <if test="room!=''">
+                                    and room=#{room}
+                                </if>
+                        </if>
+                </if>
+            </where>
+            <if test="pageNo!=0">
+                Limit #{pageStart},#{pageSize}
+            </if>
+    </select>
+
+    <delete id="deleteStudent">
+        DELETE FROM student WHERE openid=#{openid}
+    </delete>
+
+    <update id="updateStudent">
+        UPDATE student SET building=#{building}, room=#{room} WHERE openid=#{openid}
+    </update>
+
+    <select id="countRepair" resultType="int">
+        SELECT COUNT(*) FROM repair
+            LEFT JOIN student ON repair.openid=student.openid
+                <where>
+                    <if test="schoolName!=''">
+                        student.schoolName=#{schoolName}
+                        <if test="building!=''">
+                            and student.building=#{building}
+                            <if test="room!=''">
+                                and student.room=#{room}
+                            </if>
+                        </if>
+                    </if>
+                    <if test="repairTime!=''">
+                        and repair.repairTime like '${repairTime}%'
+                    </if>
+                    <if test="repairStatus!=null">
+                        <choose>
+                            <when test="repairStatus==1">
+                                and repair.repairStatus=true
+                            </when>
+                            <otherwise>
+                                and repair.repairStatus=false
+                            </otherwise>
+                        </choose>
+                    </if>
+                </where>
+    </select>
+
+    <select id="listRepair" resultType="com.zrj.vuezhizhu.entity.Repair">
+        SELECT * FROM repair
+            LEFT JOIN student ON repair.openid=student.openid
+                <where>
+                    <if test="schoolName!=''">
+                        student.schoolName=#{schoolName}
+                        <if test="building!=''">
+                            and student.building=#{building}
+                            <if test="room!='' and room!=null">
+                                and student.room=#{room}
+                            </if>
+                        </if>
+                    </if>
+                    <if test="repairTime!=''">
+                        and repair.repairTime like '${repairTime}%'
+                    </if>
+                    <if test="repairStatus!=null">
+                        <choose>
+                            <when test="repairStatus==1">
+                                and repair.repairStatus=true
+                            </when>
+                            <otherwise>
+                                and repair.repairStatus=false
+                            </otherwise>
+                        </choose>
+                    </if>
+                </where>
+                order by repairTime DESC
+                <if test="pageNo!=0">
+                    Limit #{pageStart},#{pageSize}
+                </if>
+    </select>
+
+    <update id="updateRepair">
+        UPDATE repair SET repairStatus=#{repairStatus} WHERE repairid=#{repairid}
+    </update>
+
+    <select id="countRoom" resultType="int">
+        SELECT COUNT(*) FROM building_room
+            LEFT JOIN student ON
+                building_room.schoolName=student.schoolName
+                and building_room.building=student.building
+                and building_room.room=student.room
+                    LEFT JOIN weapp_pay ON
+                        student.openid=weapp_pay.openid
+                            LEFT JOIN notify_pay ON
+                              weapp_pay.openid=notify_pay.openid
+        <where>
+            <if test="schoolName!=''">
+                building_room.schoolName=#{schoolName}
+                <if test="building!=''">
+                    and building_room.building=#{building}
+                    <if test="room!=''">
+                        and building_room.room=#{room}
+                    </if>
+                </if>
+            </if>
+            <choose>
+                <when test="isReturn != ''">
+                    <if test="payTime!='' and payTime!=null">
+                        and notify_pay.payTime like '${payTime}%'
+                    </if>
+                    and weapp_pay.isReturn=#{isReturn}
+                </when>
+                <otherwise>
+                    and (weapp_pay.isReturn=0 OR weapp_pay.isReturn=1)
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+
+    <select id="listRoomInfo" resultType="com.zrj.vuezhizhu.entity.Room">
+        SELECT * FROM building_room
+        LEFT JOIN student ON
+        building_room.schoolName=student.schoolName
+        and building_room.building=student.building
+        and building_room.room=student.room
+        LEFT JOIN weapp_pay ON
+        student.openid=weapp_pay.openid
+        LEFT JOIN notify_pay ON
+        weapp_pay.openid=notify_pay.openid
+        <where>
+            <if test="schoolName!=''">
+                building_room.schoolName=#{schoolName}
+                <if test="building!=''">
+                    and building_room.building=#{building}
+                    <if test="room!=''">
+                        and building_room.room=#{room}
+                    </if>
+                </if>
+            </if>
+            <choose>
+                <when test="isReturn != ''">
+                    <if test="payTime!='' and payTime!=null">
+                        and notify_pay.payTime like '${payTime}%'
+                    </if>
+                    and weapp_pay.isReturn=#{isReturn}
+                </when>
+                <otherwise>
+                    and (weapp_pay.isReturn=0 OR weapp_pay.isReturn=1)
+                </otherwise>
+            </choose>
+        </where>
+        <if test="pageNo!=0">
+            Limit #{pageStart},#{pageSize}
+        </if>
+    </select>
+
+    <select id="listRoomMember" resultType="com.zrj.vuezhizhu.entity.Student">
+        SELECT * FROM student WHERE schoolName=#{schoolName} and building=#{building} and room=#{room}
+    </select>
+
+    <update id="updateRoom">
+        UPDATE building_room SET gender=#{gender}, number=#{number}
+          WHERE schoolName=#{schoolName} and building=#{building} and room=#{room}
+    </update>
+
+    <select id="countProblem" resultType="int">
+        SELECT COUNT(*) FROM problem
+            LEFT JOIN student ON problem.openid=student.openid
+                <where>
+                    <if test="schoolName!=''">
+                        student.schoolName=#{schoolName}
+                        <if test="building!=''">
+                            and student.building=#{building}
+                            <if test="room!='' and room!=null">
+                                and student.room=#{room}
+                            </if>
+                        </if>
+                    </if>
+                    <if test="problemTime!=''">
+                        and problem.problemTime like '${problemTime}%'
+                    </if>
+                </where>
+                order by problemTime DESC
+                <if test="pageNo!=0">
+                    Limit #{pageStart},#{pageSize}
+                </if>
+    </select>
+
+    <select id="listProblem" resultType="com.zrj.vuezhizhu.entity.Problem">
+        SELECT * FROM problem
+            LEFT JOIN student ON problem.openid=student.openid
+                <where>
+                    <if test="schoolName!=''">
+                        student.schoolName=#{schoolName}
+                        <if test="building!=''">
+                            and student.building=#{building}
+                            <if test="room!='' and room!=null">
+                                and student.room=#{room}
+                            </if>
+                        </if>
+                    </if>
+                    <if test="problemTime!=''">
+                        and problem.problemTime like '${problemTime}%'
+                    </if>
+                </where>
+                order by problemTime DESC
+                <if test="pageNo!=0">
+                    Limit #{pageStart},#{pageSize}
+                </if>
+    </select>
+
+    <update id="updateProblem">
+        UPDATE problem SET problemStatus=#{problemStatus} WHERE problemid=#{problemid}
+    </update>
+
+</mapper>
